@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
+import validator from "validator";
 
 let profile_imgs_name_list = [
   "Garfield",
@@ -42,6 +43,7 @@ const userSchema = mongoose.Schema(
         required: true,
         lowercase: true,
         unique: true,
+        validate: [validator.isEmail, "Please provide a valid email"],
       },
       password: String,
       username: {
@@ -110,7 +112,7 @@ const userSchema = mongoose.Schema(
       default: false,
     },
     blogs: {
-      type: [Schema.Types.ObjectId],
+      type: [mongoose.Schema.Types.ObjectId],
       ref: "blogs",
       default: [],
     },
@@ -122,5 +124,15 @@ const userSchema = mongoose.Schema(
   }
 );
 
-const users = mongoose.model("users", userSchema);
-module.exports = users;
+userSchema.pre("save", async function (next) {
+  // Only run this function if password was actually modified
+  if (!this.isModified("password")) return next();
+
+  // Hash the password with cost of 12
+  this.password = await bcrypt.hash(this.password, 12);
+
+  next();
+});
+
+const Users = mongoose.model("users", userSchema);
+export default Users;
